@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Prelude
+title: Introduction
 ---
 
 ## Who Am I?
@@ -9,7 +9,7 @@ My name is Quinn Okabayashi, and I hope to one day build tools to seamlessly int
 ## Middle School
 <figure>
     <p align="center">
-        <img src="{{site.baseurl}}/images/prelude/qubits.jpg" alt="Lego Mindstorms robot" width="400"/>
+        <img src="{{site.baseurl}}/images/introduction/qubits.jpg" alt="Lego Mindstorms robot" width="400"/>
         <figcaption>Qubits: Team Quantum's competition robot</figcaption>
     </p>
 </figure>
@@ -26,13 +26,13 @@ I took Introduction to Computer Science with Python in my freshman year of high 
 The support I provided my peers on their own projects after finishing my own earned me an A+ in the course.
 
 ## Swarthmore College
-In fall 2019, I took CPSC 31: Introduction to Computer Systems, where I was first exposed to the C and Vim. Coming from Java, I became addicted to the great power and responsibility that C provided, and the hardware driving programs fascinated me.
+In fall 2019, I took CPSC 31: Introduction to Computer Systems, where picked up C and Vim. Coming from Java, I loved the great power and responsibility that C provided, and the low-level assembly and knowledge of the exact steps the hardware takes fascinated me.
 
 In the spring, I took CPSC 73: Programming Languages, instructed by [Zachary Palmer](https://www.cs.swarthmore.edu/~zpalmer/), where I gained exposure to functional programming through OCaml. For the first time since I started programming, I felt truly humbled: thinking from a functional perspective requires an entirely different skillset than thinking from a OOP perspective.
 
 <figure>
     <p align="center">
-        <img src="{{site.baseurl}}/images/prelude/computer_setup.jpg" alt="computer desk setup" width="400"/>
+        <img src="{{site.baseurl}}/images/introduction/computer_setup.jpg" alt="computer desk setup" width="400"/>
         <figcaption>My quarantine coding station</figcaption>
     </p>
 </figure>
@@ -43,7 +43,7 @@ Over the summer quarantine, Avi and I attempted to [create a generative adversar
 
 <figure>
     <p align="center">
-        <img src="{{site.baseurl}}/images/prelude/rust.jpg" alt="Rust logo" width="120"/>
+        <img src="{{site.baseurl}}/images/introduction/rust.jpg" alt="Rust logo" width="120"/>
         <figcaption>Rust: Love at first sight</figcaption>
     </p>
 </figure>
@@ -52,7 +52,7 @@ Soon after, my freshman roommate William Ball introduced me to the [Rust Program
 
 <figure>
     <p align="center">
-        <img src="{{site.baseurl}}/images/prelude/shine.jpg" alt="SHINE Technologies logo" width="400"/>
+        <img src="{{site.baseurl}}/images/introduction/shine.svg" alt="SHINE Technologies logo" width="400"/>
         <figcaption>SHINE Technologies: My fall job</figcaption>
     </p>
 </figure>
@@ -61,7 +61,7 @@ In fall 2020, I joined my friend [Solomon Olshin](https://www.solomonolshin.com/
 
 <figure>
     <p align="center">
-        <img src="{{site.baseurl}}/images/prelude/planets.jpg" alt="Earth and Mars blended into one planet" width="400"/>
+        <img src="{{site.baseurl}}/images/introduction/planets.jpg" alt="Earth and Mars blended into one planet" width="400"/>
         <figcaption>Earth + Mars: A product of my Computer Vision class</figcaption>
     </p>
 </figure>
