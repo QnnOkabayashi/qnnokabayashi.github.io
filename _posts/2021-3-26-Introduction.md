@@ -52,7 +52,7 @@ Soon after, my freshman roommate William Ball introduced me to the [Rust Program
 
 <figure>
     <p align="center">
-        <img src="{{site.baseurl}}/images/introduction/shine.svg" alt="SHINE Technologies logo" width="400"/>
+        <img src="{{site.baseurl}}/images/introduction/shine.svg" alt="SHINE Technologies logo" width="120"/>
         <figcaption>SHINE Technologies: My fall job</figcaption>
     </p>
 </figure>
