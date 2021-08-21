@@ -17,7 +17,7 @@ Once I was familiar enough with Kanidm and the framework I chose, [`tracing`](ht
 The result was a flexible, lightning fast logger that, most importantly, abstracted away many previously existing logging details from other areas of the code base.
 
 # Code I wrote ⌨️
-For details on how I spent my time, technical challenges I overcame, and interesting ideas I had along the way, see my previous blog posts at qnnokabayashi.github.io.
+For details on how I spent my time, technical challenges I overcame, and interesting ideas I had along the way, see my previous blog posts at [qnnokabayashi.github.io](https://qnnokabayashi.github.io/).
 
 ## Pull requests
 In the beginning of my project, I started with many minor changes to familiarize myself with the code base. These are the PRs I sent early on.
@@ -31,7 +31,7 @@ This is the main PR corresponding to my project. It contains information on the 
 
 ## Related repositories
 When I was developing my logging tool using `tracing`'s core functionality, I created my own repo to keep compilation times down while I was experimenting.
-* https://github.com/QnnOkabayashi/tracing-tests
+* [github.com/QnnOkabayashi/tracing-tests](https://github.com/QnnOkabayashi/tracing-tests)
 
 # Moving forward 🚀
 The core functionality of using `tracing` within Kanidm is complete, and already merged to `master`. However, the full integration into the code base isn't quite complete yet, but the process is very straight forward.
