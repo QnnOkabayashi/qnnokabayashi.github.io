@@ -12,15 +12,15 @@ I decided to take on this task, which consisted of research on:
 1. Existing logging frameworks.
 2. Kanidm's requirements for logging (e.g. performance profiling, structured logging)
 
-Once I was familiar enough with Kanidm and the framework I chose, [`tracing`](https://crates.io/crates/tracing), With William's mentorship, I used `tracing`'s core features to build a logger capable of flexible, structured, and concurrent logging that fit seamlessly into Kanidm's [`tide`](https://crates.io/crates/tide) backend.
+Once I was familiar enough with Kanidm and the framework I chose, [`tracing`](https://crates.io/crates/tracing), I used `tracing`'s core features (and a lot of William's mentorship) to build a logger capable of flexible, structured, and concurrent logging that fit seamlessly into Kanidm's [`tide`](https://crates.io/crates/tide) backend.
 
-The result was a flexible, lightning fast logger that, most importantly, abstracts away many previously existing logging details from other areas of the code base.
+The result was a flexible, lightning fast logger that, most importantly, abstracted away many previously existing logging details from other areas of the code base.
 
 # Code I wrote ⌨️
 For details on how I spent my time, technical challenges I overcame, and interesting ideas I had along the way, see my previous blog posts at qnnokabayashi.github.io.
 
 ## Pull requests
-In the beginning of my project, I started with many minor changes to familiarize myself with the code base. Here are the PR's I sent for those:
+In the beginning of my project, I started with many minor changes to familiarize myself with the code base. These are the PRs I sent early on.
 * Renamed fields in dbvalue [#477](https://github.com/kanidm/kanidm/pull/477)
 * `kanidm_client` bool/return values [#479](https://github.com/kanidm/kanidm/pull/479)
 * `kanidm_tools` cleanup [#482](https://github.com/kanidm/kanidm/pull/482)
@@ -34,9 +34,9 @@ When I was developing my logging tool using `tracing`'s core functionality, I cr
 * https://github.com/QnnOkabayashi/tracing-tests
 
 # Moving forward 🚀
-The core functionality combining `tracing` to Kanidm is complete, and already merged into Kanidm. However, the full integration into the code base isn't quite complete yet, but the process is very straight forward (and tedious).
+The core functionality of using `tracing` within Kanidm is complete, and already merged to `master`. However, the full integration into the code base isn't quite complete yet, but the process is very straight forward.
 
-If you're looking to extend my work, great! The idea right now is to integrate my work alongside `AuditScope`, and once that's finished, eventually wipe `AuditScope`'s existance from the face of the Earth. TL:DR: don't delete `AuditScope` stuff (yet).
+If you're looking to extend my work, great! The idea right now is to integrate my work alongside `AuditScope`, and once that's finished, eventually wipe `AuditScope`'s existance from the face of the Earth.
 
 Here's the workflow for integrating my changes:
 
@@ -47,7 +47,7 @@ If you see this:
 ```rust
 error!("Something went very wrong");
 ```
-You should make sure that this is at the top:
+Make sure that this is at the top:
 ```rust
 use tracing::error;
 ```
@@ -84,7 +84,7 @@ Whereas the block variant desugars to:
 This means they can still accept key-value pairs just like `tracing`'s other built in macros. However, fields other than `uuid` are ignored. (You can change the source code for this if you have good reason for it).
 
 ## Instrument `async` functions
-`async` functions that wrap their body in one span must be `instrument`ed, since spans and `async` don't play very nicely. 
+`async` functions that wrap their body in one span must be `instrument`ed, since spans and `async` don't play very nicely. Here's an example from `kanidmd/src/lib/actors/v1_read.rs`:
 ```rust
 #[instrument(
     level = "trace",
@@ -99,7 +99,7 @@ pub async fn handle_search(
     eventid: Uuid,
 ) -> Result<SearchResponse, OperationError> {
 ```
-Note that `instrument` takes many arguments. Let's break down what's happening:
+Note that `instrument` takes many arguments. Let's break down what's happening in this example:
 * Set the level to `TRACE`
 * Set the span's name to `search`
 * Tell `instrument` to not store `self`, `uat`, `req`, and `eventid` as key-value pairs.
