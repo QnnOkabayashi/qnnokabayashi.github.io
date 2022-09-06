@@ -3,7 +3,7 @@ layout: post
 title: Diplomat @ Google
 ---
 
-This summer, I had the priviledge of interning at Google on the i18n team under
+This summer, I had the privilege of interning at Google on the i18n team under
 the guidance of Manish Goregaokar and Shane Carr. My team worked on a
 project called [ICU4X](https://github.com/unicode-org/icu4x), which is an open
 source internationalization library written in Rust. Although I contributed to
