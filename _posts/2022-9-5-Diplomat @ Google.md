@@ -192,7 +192,7 @@ Here, the output has lifetime `'c`, and the input has lifetime `'a`, but it
 doesn't explicitly say `'a: 'c`. Instead, it's _inferred_ via transitivity.
 Do you see where this is going?
 
-Here's an exaggurated example of a `where` clause:
+Here's an exaggerated example of a `where` clause:
 ```rust
 'a: 'b,
 'b: 'c,
