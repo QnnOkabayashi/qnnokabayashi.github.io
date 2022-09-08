@@ -205,7 +205,7 @@ problem.
 
 If you think of lifetimes as vertices and bounds as edges pointing from longer
 to shorter lifetimes, then determining possible coercions becomes a
-simple reachability problem. The diagram below shows the exaggurated example
+simple reachability problem. The diagram below shows the exaggerated example
 as a directed graph:
 <figure>
     <p align="center">
