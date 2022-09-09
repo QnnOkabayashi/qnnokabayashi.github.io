@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Diplomat @ Google
+title: Rust borrowing across FFI
 ---
 
 This summer, I had the privilege of interning at Google on the i18n team under
@@ -12,46 +12,64 @@ FFI tool, [Diplomat](https://github.com/rust-diplomat/diplomat).
 
 # Diplomat: FFI bindings to anything
 
-Diplomat is an open source project started at Google, and was motivated by the
-lack of good FFI tools that satified ICU4X's requirements. This post focuses on
-how it works, but details on the motivation can be found in the [design document](https://github.com/rust-diplomat/diplomat/blob/main/docs/design_doc.md).
+Diplomat is an open source project started by the ICU4X project, designed by
+Manish, and originally implemented by Shadaj, a past Google intern, and was
+motivated by the lack of good FFI tools that satified ICU4X's requirements. This
+post focuses on how it works, but details on the motivation can be found in the
+[design document](https://github.com/rust-diplomat/diplomat/blob/main/docs/design_doc.md).
 
-Diplomat is a unidirectional FFI tool that allows programs in other languages
+Diplomat is a unidirectional[^1] FFI tool that allows programs in other languages
 to call Rust libraries via automatically generated, idiomatic APIs. At its core
 lays the abstract representation of types and methods, which represents the
 lowest common denominator for what types and methods look like across most
 modern programming languages. Since the abstract representation is so general,
 Diplomat is theoretically capable of generating bindings to any language that
-Rust has FFI support for, namely JavaScript via WebAssembly, and languages that
-support C FFI. Currently, it has support for generating bindings to C, C++, C#,
-and JavaScript/TypeScript.  Diplomat also generates native-feeling types and
+can support binding to C or WASM, since it generates `extern "C"` functions for
+each method. Currently, it has support for generating bindings to C, C++, C#,
+and JavaScript/TypeScript. Diplomat also generates native-feeling types and
 methods in the target language that call into the raw WASM/C interface.
 
-The cost of creating bindings to all these languages is just one set of FFI
-bindings, which are exposed through a module marked with the
-`#[diplomat::bridge]` proc macro. So if you have some large Rust library like
-ICU4X, you can attach Diplomat bindings and get native feeling APIs in every
-supported language at no extra cost.
+[^1]: Unidirectional FFI is when one language can invoke functions in another
+language, but not the other way around.
 
-# Abstract Representation
+The cost of creating bindings to all these languages is just one set of FFI API
+declarations, which looks mostly like normal Rust code exposed through a module
+marked with the `#[diplomat::bridge]` proc macro (inspired by `#[cxx::bridge]`).
+So if you have some large Rust library like ICU4X, you can attach Diplomat
+bindings and get native feeling APIs in every supported language at no extra cost.
+
+## Abstract Representation
+
+Since Diplomat aims to be language agnostic, it requires an abstract representation
+that makes sense to many languages. For this reason, it's abstract representation
+consists of only primitives (integers, booleans, strings), fieldless enums,
+structs, and methods. By supporting these ideas that are representable to most
+programming languages, Diplomat is able to reason about the types and generate
+conversion code between the two over FFI when calling Rust methods.
+
+The problem with this model is that sometimes we don't want to convert a value
+at the boundary because it's only ever used to call back into Rust code. This
+is solved by opaque structs.
+
+### Opaque vs Non-Opaque Structs
 
 In general, there are two kinds of structs in programming. The first kind of
-struct has values that are semantically disjoint, where fields can typically be
-mutated without breaking things. In Rust, the most common examples are tuples,
-but it also shows up in config types frequently. The second kind are opaque
-structs which usually have some more advanced functionality. An example is
-Rust's `HashMap`, where the user shouldn't particulary care about the exact
-inner fields, and only cares about the functionality.
+struct is the "bag 'o stuff", and has fields that are semantically disjoint.
+In Rust, the most common examples are tuples, but it also shows up in config
+types frequently. The second kind are opaque structs which usually have some
+more advanced functionality. An example is Rust's `HashMap`, where the user
+shouldn't particulary care about the exact inner fields, and only cares about
+the functionality.
 
 Diplomat distinguishes between these two kinds of structs, and the programmer
 can communicate this by marking opaque structs with the `#[diplomat::opaque]`
 attribute. Structs marked as opaque have special properties in Diplomat's model:
 1. Fields are private from the other language, only methods can be used.
-2. Fields can be _any_ valid Rust values, since Diplomat doesn't examine them.
+2. Fields can be _any_ concrete type, since Diplomat doesn't examine them.
 3. Can only cross the FFI boundary behind a pointer, meaning there is no
 conversion cost.
 4. Boxed opaques can only be returned, but not accepted as a parameters because
-most other languages don't have a way to give up ownership.
+many other languages don't have a way to give up ownership.
 
 On the other hand, structs not marked with the `#[diplomat::opaque]` attribute
 have nearly opposite properties:
@@ -62,10 +80,11 @@ borrowed opaques, string slices, and slices of primitives.
 3. Can only cross the FFI boundary by value, meaning that every field is also
 converted at the boundary.
 
-Additionally, Diplomat also supports fieldless enums, which are just passed
-as their discriminents across the boundary and then converted appropriately.
+In JavaScript, for example, "bag 'o stuff" structs are converted into classes
+with public fields and methods associated to the Diplomat-exposed methods.
 
-# My Intern Project
+
+# My Intern Project: Lifetimes in Diplomat
 
 Rust's type system allows for expressing mutability, ownership and lifetimes,
 concepts that most other languages simply do not have. My work this summer was
@@ -76,10 +95,12 @@ with returning references to borrowed data.
 One of the problems that Rust's lifetime system solves is dangling pointers,
 and it does this statically by preventing references from outliving their owners.
 But rustc can only do static analysis on pure Rust code, and this is the main
-problem with returning pointers across FFI (aside from XOR aliasing, which is
-[being worked on](https://github.com/rust-diplomat/diplomat/issues/225)).
+problem with returning pointers across FFI[^2].
 
-The solution is to instead make Diplomat enforce whatever technique the other
+[^2]: XOR aliasing is also solved by lifetimes, which is
+[being worked on](https://github.com/rust-diplomat/diplomat/issues/225).
+
+The solution, instead, is to make Diplomat enforce whatever technique the other
 language uses to prevent dangling references. In garbage collected languages
 like JavaScript, this involves attaching an edge to the owner to stop it from
 being GCd early. In manually memory-managed languages like C++, this involves
@@ -121,6 +142,7 @@ class Foo {
     get_bar() {
         // `this.underlying` is the ptr to the Rust opaque
         const bar = wasm.Foo_get_bar(this.underlying);
+        // add an edge so the GC doesn't clean up `this` before `bar`
         bar.fooRef = this;
         return bar;
     }
@@ -141,7 +163,7 @@ public:
 Fundementally, this idea is very straightforward and not too difficult to
 implement. Right? _Right?_
 
-## Challenge 1: Lifetime Coercion
+## Challenge 1: Lifetime Subtyping
 
 Unfortunately, not all code lives on this happy path. Check this out:
 ```rust
@@ -155,10 +177,10 @@ impl<'a> Foo<'a> {
     }
 }
 ```
-To be honest, I've never had to use lifetime bounds outside of borrowing
-`Deserialize` impls, and Diplomat doesn't support generic types, so I'm not sure
-why you'd need bounded lifetimes. But they exist, and I didn't want to leave it
-as someone else's problem.
+I've never had to use lifetime bounds outside of borrowing `Deserialize` impls,
+and Diplomat doesn't support generic types, so I'm not sure why you'd need
+bounded lifetimes. But they exist, and I didn't want to leave it as someone
+else's problem.
 
 The problem here is that the output looks like this:
 ```rust
@@ -171,8 +193,10 @@ self: &Foo<'a>
 **These are not the same lifetime**. If you just look in the input for `'b`,
 you'll find that it doesn't borrow from the input, and this can and will
 eventually lead to dangling pointers. But this works in Rust because the
-`'a: 'b` bound allows`'a` to coerce into `'b`. Therefore, we have to be
-cognizant of these bounds as well. But it goes even further:
+`'a: 'b` bound allows`'a` to coerce into `'b`, meaning that if we're looking for
+all inputs that live at least `'b`, then we should also count types with `'a`.
+Therefore, we have to be cognizant of these bounds as well.
+But it goes even further:
 ```rust
 impl<'a> Foo<'a> {
     pub fn get_bar<'b, 'c>(&self) -> &'c Bar
@@ -249,35 +273,34 @@ mod ffi {
     }
 
     impl<'a> Input<'a> {
-        pub fn create(data: &'a Opaque) -> Self {
-            Self { data }
-        }
-
-        pub fn extract(input: Input<'a>) -> &'a Opaque {
-            let out = input.data;
+        pub fn extract(self) -> &'a Opaque {
+            let out = self.data;
             out
         }
     }
 }
 ```
-When rustc sees `Input::extract`, it requires that `input.data ≤ 'a ≥ out`, and
+When rustc sees `Input::extract`, it requires that `self.data ≤ 'a ≥ out`, and
 it's able to statically enforce this because rustc is omniscient on pure Rust code.
-Diplomat, on the other hand, does FFI, where nothing is statically omniscient.
-With the current solution, Diplomat would require `'a ≥ input.data ≥ input ≥ out`,
-since the current idea doesn't detect which field is being borrowed from.
-This is an overly conservative approach to enforcing `'a ≥ out`.
+Diplomat, on the other hand, cannot perform static analysis since it cannot peek
+into the other side of the code.
+With the lifetime design discussed so far, Diplomat would require
+`'a ≥ self.data ≥ self ≥ out`, since the current idea doesn't detect which
+field is being borrowed from. This is an overly conservative approach to
+enforcing `'a ≥ out`.
 
 Being overly conservative can prevent some painfully obvious programs from being
-accepted. In C++ for example, Diplomat would tell you that you could have a
-dangling reference if some wrapper struct goes out of scope, even it's clearly
-not true:
+accepted. In C++ for example, Diplomat would generate documentation saying that
+you that you could have a dangling reference if some wrapper struct goes out of
+scope, even it's clearly not true:
 ```cpp
 const Opaque& do_nothing(const Opaque& data) {
     // Put `data` into the struct
-    auto input = Input::create(data);
+    Input input;
+    input.data = data;
 
     // Extract `data` from the struct
-    auto out = Input::extract(input);
+    const Opaque& out = Input::extract(input);
 
     // STOP! Diplomat says you'll have a dangling ref
     // if `input` goes out of scope before `out` does.
@@ -286,14 +309,14 @@ const Opaque& do_nothing(const Opaque& data) {
 ```
 This code is completely safe since it just returns the reference that was
 originally passed in, but Diplomat will still generate documentation saying that
-this should leave a dangling pointer since `Input::extract` thinks that `input`
+this should leave a dangling pointer since `Input::extract` thinks that `self`
 must outlive `out`. Equivalent generated JavaScript bindings would just add an
 edge and chug along normally, consuming slightly more memory than usual.
 
 Ideally, we want to be able to know that the output of `Input::extract` isn't
-bound to `input`, but instead bound to whatever `input.data` is bound to.
-This would eliminate the requirement of having `input` outlive `out`, and
-making Diplomat only have to enforce `'a ≥ input.data ≥ out`.
+bound to `self`, but instead bound to whatever `self.data` is bound to.
+This would eliminate the requirement of having `self` outlive `out`, and
+making Diplomat only have to enforce `'a ≥ self.data ≥ out`.
 
 This is a lot easier said than done though. For starters, checking for lifetime
 relationships now involves recursing down non-opaque structs and their fields,
@@ -354,19 +377,19 @@ mod ffi {
     }
 
     impl<'a> Input<'a> {
-        fn get_data(input: Input<'a>) -> Output<'a> {
-            let out = Output { data: input.data }
+        fn get_data(self) -> Output<'a> {
+            let out = Output { data: self.data }
             out
         }
     }
 }
 ```
 This follows similarly to the previous example, except we observe that
-`out.data` has to live `'a`, and that `input.data` is guaranteed to live `'a`,
-so we can just enforce that `input.data` has to outlive `out.data` to uphold
+`out.data` has to live `'a`, and that `self.data` is guaranteed to live `'a`,
+so we can just enforce that `self.data` has to outlive `out.data` to uphold
 the invariant that `out.data` lives at least `'a`.
 
-## Challenge 3: Index-based Lifetimes
+## Challenge 3: Naming Lifetimes
 Tracking the "outlives" relationship on a field-by-field basis is great, but
 it introduces another challenge: lifetimes can go by different names in
 different declarations:
@@ -387,17 +410,18 @@ mod ffi {
     }
 
     impl<'a> Input<'a> {
-        fn get_data(input: Input<'a>) -> Output<'a> {
-            let out = Output { data: input.data }
+        fn get_data(self) -> Output<'a> {
+            let out = Output { data: self.data }
             out
         }
     }
 }
 ```
 The lifetimes in the declarations of `Input` and `Output` have completely
-different names. We can't just track `'a` all the way down, which sucks because
-that would have been easy. Instead, we have to track lifetimes by the index they
-appear at in generic arguments, since that's what rustc does.
+different names. We can't just track `'a` all the way down since `'a` is being
+mapped to other lifetimes. Instead, we have to track lifetimes by the index they
+appear at in generic arguments, and use that to determine which lifetime is which.
+This is similar to what rustc does.
 
 ## The Big Picture
 Let's put this all together and walk through an example of a method with
@@ -420,11 +444,11 @@ mod ffi {
     }
 
     impl<'a> Input<'a> {
-        fn get_data<'b>(input: Input<'a>) -> Output<'b>
+        fn get_data<'b>(self) -> Output<'b>
         where
             'a: 'b,
         {
-            let out = Output { data: input.data }
+            let out = Output { data: self.data }
             out
         }
     }
@@ -441,20 +465,21 @@ actually `&'b Opaque` in the context of the method. We then remark that
 field traversal, and finish.
 
 Once we know which lifetimes to look out for (just `'b`), we traverse the types
-of the
-inputs, which consists of just `Input<'a>`. Since `Input` is a non-opaque struct,
-we look in the declaration of `Input` and store a mapping saying that the
+of the inputs, which consists of just `Input<'a>`. Since `Input` is a non-opaque
+struct, we look in the declaration of `Input` and store a mapping saying that the
 position of `'i` in the context of `Input`'s declaration corresponds with the
 position of `'a` in `Input<'a>` in the method. Inside of `Input`s declaration
 we see the `data: &'i Opaque` field, so we map the lifetime `'i` back to `'a`,
 and then perform a depth-first search in the lifetime graph to find all shorter
 lifetimes.  This search results in finding `'b`. After confirming that `'b`
-appears in the output, we remark that `input.data` is one of the input fields
+appears in the output, we remark that `self.data` is one of the input fields
 that lives at least `'b`.
 
 In code generation, we put these pieces of information together to determine
-that `out.data` must be outlived by `input.data`, which is exactly what we
-were aiming for.
+that `out.data` must be outlived by `self.data`. With this information, for
+example, JavaScript would handle this by adding a GC edge to ensure that values
+are cleaned up in the right order, and C++ would have generated documentation
+specifying which the lifetime invariant that needs to be upheld.
 
 # Results
 That's a lot of details, and unfortunately it's not 100% integrated yet.
@@ -474,21 +499,18 @@ backends with `.unwrap()` and `unreachable!()` statements. On top of this, the
 existing JavaScript code generation was really challenging to understand and
 work with, and I ended up spending a week rewriting it to be more modular.
 
-# Next Steps
-Diplomat is relatively a new project, and we're still making a lot of decisions
-that we're unsure about. Since I was adding such a large feature to Diplomat's
-core model, a lot of these older design decisions came back to bite me, and
-I began to consider how I would have implemented Diplomat knowing what I know
-now. Additionally, Manish and I had been discussing how to more concretely
-define Diplomat's type model, particularly around input and output types which
-is a whole other topic. This was the beginning of the high-level intermediate
-representation (HIR).
+Each of these challenges made me consider how I would have done things differently
+to make everything easier given the opportunity to. This lead to me designing the
+high-level intermediate representation (HIR), which will eventually be the
+interface that language backends interface with to generate bindings.
 
+# Next Steps: HIR
 The HIR is an ongoing endeavor that attempts improve on the suboptimal design
-decisions of the past by making everything more coherent. I designed it from
-the ground up around three core ideas:
-1. Make invalid states unrepresentable.
-2. Make types more convenient for writing backends.
+decisions of the past by making everything more coherent. I designed and
+implemented it over the course of my internship from the ground up around three
+core ideas:
+1. Make invalid states unrepresentable to reduce `.unwrap()`s.
+2. Make types more convenient for writing backends by breaking apart large `enum`s.
 3. Make lifetime tracking a first-class feature.
 
 It will make all the challenges I listed above non-issues for folks implementing
@@ -496,8 +518,8 @@ Diplomat backends, along with many other quality-of-life changes by serving as
 an interface between Diplomat's naive abstract representation and the language
 backends.
 
-So far, my first iteration of the model is in the repository, as well as the
-lowering code for converting Diplomat's old representation to this new
-representation, but there's continuous ongoing work to make it the standard
-in Diplomat's model.
+At this point, the type system is well defined and implemented, and the code
+to convert Diplomat's current abstract representation into the HIR is implemented
+but not thoroughly tested. But the roadmap for full integration is there, and
+there's continuous ongoing work to make it the standard in Diplomat's model.
 
