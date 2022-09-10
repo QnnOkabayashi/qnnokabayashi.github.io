@@ -37,7 +37,7 @@ library to another language.
 The cost of creating bindings to all these languages is just the work involved
 in writing one set of FFI API declarations, which looks mostly like normal Rust
 code exposed through a module marked with the `#[diplomat::bridge]` proc macro,
-which is inspired by `#[cxx::bridge]`.  So if you have some large Rust library
+which is inspired by `#[cxx::bridge]`. So if you have some large Rust library
 like ICU4X, you can attach Diplomat bindings and get native feeling APIs in every
 supported language at no extra cost. We'll explore some examples together below.
 
@@ -50,19 +50,21 @@ structs, and methods. By supporting these ideas that are representable to most
 programming languages, Diplomat is able to reason about the types and generate
 conversion code between the two over FFI when calling Rust methods.
 
-This introduces a problem: sometimes we don't want to convert certain values
-at the boundary because their internals are, well, _internal_, and we only want
-to expose their functionality. This is where opaque structs come into play.
+This is great, but introduces a problem: sometimes we don't want to convert
+certain values at the boundary because their internals are, well, _internal_,
+and we only want to expose their functionality. This is where opaque structs
+come into play.
 
 ### Opaque vs Non-Opaque Structs
 
-In general, there are two kinds of structs in programming. The first kind of
-struct is the "bag 'o stuff", and has fields that are semantically disjoint.
-In Rust, the most common examples are tuples, but it also shows up in config
-types frequently. The second kind are opaque structs which usually have some
-more advanced functionality. An example is Rust's `HashMap`, where the user
-shouldn't particulary care about the exact inner fields (which are private anyway!),
-and only cares about the functionality it provides.
+In general, there are two kinds of structs in programming. The first kind is the
+"opaque" struct, which usually has some more advanced functionality. An example
+is Rust's `HashMap`, where the user shouldn't particulary care about the exact
+inner fields (which are private anyway!), and should only care about the
+functionality it provides. The second kind is the "bag 'o stuff" struct (also
+referred to as non-opaque struct in this post), which has fields that are
+semantically disjoint. This kind most frequently shows up in Rust in the form of
+tuples and builders.
 
 Diplomat distinguishes between these two kinds of structs, and the programmer
 can communicate this by marking opaque structs with the `#[diplomat::opaque]`
