@@ -16,7 +16,7 @@ little near the end, I spent most of my time working on the supplemental FFI too
 Diplomat is an open source project started by the ICU4X project, designed by
 Manish and originally implemented by [Shadaj](https://twitter.com/ShadajL),
 a past Google intern, and was motivated by the lack of good FFI tools that
-satified ICU4X's requirements. This post focuses on how it works, but details
+satisfied ICU4X's requirements. This post focuses on how it works, but details
 on the motivation can be found in the [design document](https://github.com/rust-diplomat/diplomat/blob/main/docs/design_doc.md).
 
 Diplomat is a unidirectional[^1] Rust FFI tool that answers the question: "What
@@ -57,7 +57,7 @@ come into play.
 
 In general, there are two kinds of structs in programming. The first kind is the
 "opaque" struct, which usually has some more advanced functionality. An example
-is Rust's `HashMap`, where the user shouldn't particulary care about the exact
+is Rust's `HashMap`, where the user shouldn't particularly care about the exact
 inner fields (which are private anyway!), and should only care about the
 functionality it provides. The second kind is the "bag 'o stuff" struct (also
 referred to as non-opaque struct in this post), which has fields that are
@@ -167,7 +167,7 @@ public:
     const Bar& get_bar() { /* ... */ }
 }
 ```
-Fundementally, this idea is straightforward and not too difficult to implement...
+Fundamentally, this idea is straightforward and not too difficult to implement...
 right?
 
 ## Challenge 1: Lifetime Subtyping
@@ -229,7 +229,7 @@ Here's an exaggerated example of a `where` clause:
 'd: 'b,
 'e: 'd + 'f,
 ```
-This looks lot like an adjacency list...
+This looks a lot like an adjacency list...
 
 Ah. It's a directed graph problem.
 
@@ -428,7 +428,7 @@ mod ffi {
 The lifetimes in the declarations of `Input` and `Output` have completely
 different names. We can't just track `'a` all the way down since `'a` is being
 mapped to other lifetimes. Instead, we have to track lifetimes by the index they
-appear at in generic arguments, and use that to determine which lifetime is which.
+appear in generic arguments, and use that to determine which lifetime is which.
 This is similar to what rustc does.
 
 ## The Big Picture
@@ -482,7 +482,7 @@ back to `'a`. At this point, we have to consider that `'a` may coerce into
 other lifetimes, so we perform a depth-first search in the lifetime graph to
 find all shorter lifetimes. This search results in finding `'b`. After confirming
 that `'b` appears in the output, we remark that `self.data` is one of the input
-fields that lives at least `'b`.
+fields that live at least `'b`.
 
 In code generation, we put these pieces of information together to determine
 that `out.data` must be outlived by `self.data`. With this information, for
@@ -498,13 +498,13 @@ is entire implemented, but tracking borrows on a field-by-field basis is only
 implemented in the JavaScript backend. Aside from not understanding the full
 scope of the problem before starting, the biggest challenge was that Diplomat's
 abstract representation was not designed with lifetimes in mind, and also
-wasn't condusive to writing robust code.
+wasn't conducive to writing robust code.
 
 For example, traversing down structs recursively and maintaining a mapping from
 lifetimes in a declaration to lifetimes in the method was bolted on at the end
 after I'd already written a significant amount of code. Additionally, Diplomat's
 model allows for a bunch of illegal states like an opaque struct passed by value.
-Obviously there are validity checks, the loose type system eventaully pollutes
+Obviously there are validity checks, the loose type system eventually pollutes
 backends with `.unwrap()` and `unreachable!()` statements. On top of this, the
 existing JavaScript code generation was really challenging to understand and
 work with, and I ended up spending a week rewriting it to be more modular.
