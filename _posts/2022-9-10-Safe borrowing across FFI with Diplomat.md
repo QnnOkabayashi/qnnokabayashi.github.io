@@ -504,7 +504,7 @@ For example, traversing down structs recursively and maintaining a mapping from
 lifetimes in a declaration to lifetimes in the method was bolted on at the end
 after I'd already written a significant amount of code. Additionally, Diplomat's
 model allows for a bunch of illegal states like an opaque struct passed by value.
-Obviously there are validity checks, the loose type system eventually pollutes
+Obviously there are validity checks, but the loose type system eventually pollutes
 backends with `.unwrap()` and `unreachable!()` statements. On top of this, the
 existing JavaScript code generation was really challenging to understand and
 work with, and I ended up spending a week rewriting it to be more modular.
