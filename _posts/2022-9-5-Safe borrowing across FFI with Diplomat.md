@@ -30,9 +30,7 @@ it also generates native-feeling types and methods in the target language that
 wrap the WASM/C interface. Currently, Diplomat has support for generating
 bindings to C, C++, C#, and JavaScript/TypeScript.
 
-[^1]: Unidirectional FFI is when one language can invoke APIs from another
-language, but not the other way around. This is most common when exposing a
-library to another language.
+[^1]: Unidirectional FFI is when one language can invoke APIs from another language, but not the other way around. This is most common when exposing a library to another language.
 
 The cost of creating bindings to all these languages is just the work involved
 in writing one set of FFI API declarations, which looks mostly like normal Rust
@@ -103,8 +101,7 @@ and it does this statically by preventing references from outliving their owners
 But rustc can only do static analysis on pure Rust code, and this is the main
 problem with returning pointers across FFI: it's not just pure Rust code.
 
-[^2]: XOR aliasing is also solved with Rust's lifetime system, and this is
-[being worked on](https://github.com/rust-diplomat/diplomat/issues/225).
+[^2]: XOR aliasing is also solved with Rust's lifetime system, and this is [being worked on](https://github.com/rust-diplomat/diplomat/issues/225).
 
 The solution, instead, is to make Diplomat enforce whatever technique the other
 language uses to prevent dangling references. In garbage collected languages
@@ -536,3 +533,8 @@ to convert Diplomat's current abstract representation into the HIR is implemente
 but not thoroughly tested. But the roadmap for full integration is there, and
 there's continuous ongoing work to make it the standard in Diplomat's model.
 
+# Thank you
+A special thank you to Manish and Shane for being kind, patient, encouraging,
+and overall amazing hosts. I remember coming across [Jane's blog post](https://yaah.dev/getting-involved)
+before the start of my internship, and now I can 100% confirm that having Manish
+as a mentor is as amazing as Jane makes it out to be.
