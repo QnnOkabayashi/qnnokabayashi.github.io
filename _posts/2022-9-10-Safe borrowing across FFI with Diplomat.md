@@ -8,8 +8,8 @@ the guidance of [Manish Goregaokar](https://twitter.com/ManishEarth) and
 [Shane Carr](https://twitter.com/_sffc). My team worked on a project called
 [ICU4X](https://github.com/unicode-org/icu4x), which is an open source
 internationalization library written in Rust. Although I contributed to this a
-little near the end, I spent most of my time working on the supplemental FFI tool,
-[Diplomat](https://github.com/rust-diplomat/diplomat).
+little near the end, I spent most of my time working on the supplemental 
+foreign function interface (FFI) tool, [Diplomat](https://github.com/rust-diplomat/diplomat).
 
 # Diplomat: FFI bindings to anything
 
@@ -20,12 +20,12 @@ satisfied ICU4X's requirements. This post focuses on how it works, but details
 on the motivation can be found in the [design document](https://github.com/rust-diplomat/diplomat/blob/main/docs/design_doc.md).
 
 Diplomat is a unidirectional[^1] Rust FFI tool that answers the question: "What
-if we had FFI tools like CXX, but pluggable to any language?" At its core
-lays the abstract representation of types and methods, which represents the
-lowest common denominator for what types and methods look like across most
-modern programming languages. This enables it to be theoretically capable of
-generating bindings to any language that can support binding to C or WASM,
-since it works through generated `extern "C"` functions. To top things off,
+if we had FFI tools like [CXX](https://cxx.rs/), but pluggable to any language?"
+At its core lays the abstract representation of types and methods, which
+represents the lowest common denominator for what types and methods look like
+across most modern programming languages. This enables it to be theoretically
+capable of generating bindings to any language that can support binding to C or
+WASM, since it works through generated `extern "C"` functions. To top things off,
 it also generates native-feeling types and methods in the target language that
 wrap the WASM/C interface. Currently, Diplomat has support for generating
 bindings to C, C++, C#, and JavaScript/TypeScript.
