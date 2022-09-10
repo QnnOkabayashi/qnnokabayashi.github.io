@@ -32,7 +32,7 @@ methods in the target language that call into the raw WASM/C interface.
 [^1]: Unidirectional FFI is when one language can invoke functions in another
 language, but not the other way around.
 
-The cost of creating bindings to all these languages is just one set of FFI API
+The cost of creating bindings to all these languages is just the work involved in writing one set of FFI API
 declarations, which looks mostly like normal Rust code exposed through a module
 marked with the `#[diplomat::bridge]` proc macro (inspired by `#[cxx::bridge]`).
 So if you have some large Rust library like ICU4X, you can attach Diplomat
